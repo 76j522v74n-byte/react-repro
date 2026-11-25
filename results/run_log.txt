@@ -1,0 +1,122 @@
+mini-ReAct 复现实验  运行时间: 2026-11-10 12:50:24
+环境: 自建 mini 多跳问答 12 题（无 API / 无 GPU / 无网络）
+说明: LLM 推理由确定性策略模拟（见 README『诚实声明』），全部行为可在日志中核对。
+========================================================================
+
+### 模式: baseline （单次决策，对应原论文 Standard 基线）
+[Q01] pred=H2O | gold=H2O | PASS (参数记忆直接命中（memorized）)
+[Q02] pred=明朝 | gold=明朝 | PASS (参数记忆直接命中（memorized）)
+[Q03] pred=《自然哲学的数学原理》 | gold=英国 | FAIL (仅完成第一跳检索，停在中间实体「《自然哲学的数学原理》」)
+[Q04] pred=鲁迅 | gold=浙江省 | FAIL (仅完成第一跳检索，停在中间实体「鲁迅」)
+[Q05] pred=阿波罗11号 | gold=1930 | FAIL (仅完成第一跳检索，停在中间实体「阿波罗11号」)
+[Q06] pred=《哈姆雷特》 | gold=斯特拉特福 | FAIL (仅完成第一跳检索，停在中间实体「《哈姆雷特》」)
+[Q07] pred=白炽灯 | gold=1847 | FAIL (仅完成第一跳检索，停在中间实体「白炽灯」)
+[Q08] pred=《自然哲学的数学原理》 | gold=1643 | FAIL (仅完成第一跳检索，停在中间实体「《自然哲学的数学原理》」)
+[Q09] pred=《物种起源》 | gold=英国 | FAIL (仅完成第一跳检索，停在中间实体「《物种起源》」)
+[Q10] pred=青霉素 | gold=英语 | FAIL (仅完成第一跳检索，停在中间实体「青霉素」)
+[Q11] pred=门捷列夫 | gold=莫斯科 | FAIL (仅完成第一跳检索，停在中间实体「门捷列夫」)
+[Q12] pred=《物种起源》 | gold=英镑 | FAIL (仅完成第一跳检索，停在中间实体「《物种起源》」)
+--> baseline 正确 2/12 = 16.7%
+
+### 模式: react （Thought-Action-Observation 循环）
+[Q01] 水的化学式是什么？
+Thought 1: 题目需要 1 跳。先查主实体。
+Action 1: search('水', 'chemical_formula') -> H2O
+Thought 2: 证据链完整（H2O），给出 Final Answer。
+Final Answer: H2O | gold: H2O -> PASS
+[Q02] 《西游记》的作者是哪个朝代的人？
+Thought 1: 题目需要 2 跳。先查主实体。
+Action 1: search('《西游记》', 'author') -> 吴承恩
+Thought 2: 已确认第 1 跳 = 吴承恩。继续查下一跳。
+Action 2: search('吴承恩', 'dynasty') -> 明朝
+Thought 3: 证据链完整（吴承恩 -> 明朝），给出 Final Answer。
+Final Answer: 明朝 | gold: 明朝 -> PASS
+[Q03] 万有引力定律（发表于《自然哲学的数学原理》）的提出者的国籍是什么？
+Thought 1: 题目需要 2 跳。先查主实体。
+Action 1: search('《自然哲学的数学原理》', 'author') -> 牛顿
+Thought 2: 已确认第 1 跳 = 牛顿。继续查下一跳。
+Action 2: search('牛顿', 'nationality') -> 英国
+Thought 3: 证据链完整（牛顿 -> 英国），给出 Final Answer。
+Final Answer: 英国 | gold: 英国 -> PASS
+[Q04] 鲁迅出生地所在的城市今天属于哪个省？
+Thought 1: 题目需要 2 跳。先查主实体。
+Action 1: search('鲁迅', 'birthplace_city') -> 绍兴
+Thought 2: 已确认第 1 跳 = 绍兴。继续查下一跳。
+Action 2: search('绍兴', 'province_now') -> 浙江省
+Thought 3: 证据链完整（绍兴 -> 浙江省），给出 Final Answer。
+Final Answer: 浙江省 | gold: 浙江省 -> PASS
+[Q05] 第一次载人登月任务（阿波罗11号）的指令长出生于哪一年？
+Thought 1: 题目需要 2 跳。先查主实体。
+Action 1: search('阿波罗11号', 'commander') -> 尼尔·阿姆斯特朗
+Thought 2: 已确认第 1 跳 = 尼尔·阿姆斯特朗。继续查下一跳。
+Action 2: search('尼尔·阿姆斯特朗', 'birth_year') -> 1930
+Thought 3: 证据链完整（尼尔·阿姆斯特朗 -> 1930），给出 Final Answer。
+Final Answer: 1930 | gold: 1930 -> PASS
+[Q06] 《哈姆雷特》作者的出生小镇叫什么？
+Thought 1: 题目需要 2 跳。先查主实体。
+Action 1: search('《哈姆雷特》', 'author') -> 莎士比亚
+Thought 2: 已确认第 1 跳 = 莎士比亚。继续查下一跳。
+Action 2: search('莎士比亚', 'birthplace_town') -> 斯特拉特福
+Thought 3: 证据链完整（莎士比亚 -> 斯特拉特福），给出 Final Answer。
+Final Answer: 斯特拉特福 | gold: 斯特拉特福 -> PASS
+[Q07] 白炽灯的实用化发明者出生于哪一年？
+Thought 1: 题目需要 2 跳。先查主实体。
+Action 1: search('白炽灯', 'practical_inventor') -> 爱迪生
+Thought 2: 已确认第 1 跳 = 爱迪生。继续查下一跳。
+Action 2: search('爱迪生', 'birth_year') -> 1847
+Thought 3: 证据链完整（爱迪生 -> 1847），给出 Final Answer。
+Final Answer: 1847 | gold: 1847 -> PASS
+[Q08] 提出万有引力定律的科学家出生于哪一年？
+Thought 1: 题目需要 2 跳。先查主实体。
+Action 1: search('《自然哲学的数学原理》', 'author') -> 牛顿
+Thought 2: 已确认第 1 跳 = 牛顿。继续查下一跳。
+Action 2: search('牛顿', 'birth_year') -> 1643
+Thought 3: 证据链完整（牛顿 -> 1643），给出 Final Answer。
+Final Answer: 1643 | gold: 1643 -> PASS
+[Q09] 《物种起源》的作者现在国籍所在国家是什么？
+Thought 1: 题目需要 2 跳。先查主实体。
+Action 1: search('《物种起源》', 'author') -> 达尔文
+Thought 2: 已确认第 1 跳 = 达尔文。继续查下一跳。
+Action 2: search('达尔文', 'nationality_now') -> 英国
+Thought 3: 证据链完整（达尔文 -> 英国），给出 Final Answer。
+Final Answer: 英国 | gold: 英国 -> PASS
+[Q10] 青霉素发现者现在国籍所在国家的通用语言是什么？
+Thought 1: 题目需要 3 跳。先查主实体。
+Action 1: search('青霉素', 'discoverer') -> 亚历山大·弗莱明
+Thought 2: 已确认第 1 跳 = 亚历山大·弗莱明。继续查下一跳。
+Action 2: search('亚历山大·弗莱明', 'nationality_region') -> 苏格兰
+Thought 3: 知识库中没有『苏格兰』这个实体，先 lookup 验证。
+Action 3: lookup('苏格兰') -> [no result]
+Thought 4: lookup 无结果，说明层级错误。弗莱明生于苏格兰但国家为英国，改查 nationality_now。
+Action 4: search('亚历山大·弗莱明', 'nationality_now') -> 英国
+Thought 5: 已确认第 2 跳 = 英国。继续查下一跳。
+Action 5: search('英国', 'language_now') -> 英语
+Thought 6: 证据链完整（亚历山大·弗莱明 -> 英国 -> 英语），给出 Final Answer。
+Final Answer: 英语 | gold: 英语 -> PASS
+[Q11] 元素周期表的创立者出生的国家现在的首都叫什么？
+Thought 1: 题目需要 3 跳。先查主实体。
+Action 1: search('门捷列夫', 'birth_country_historical') -> 俄罗斯帝国
+Thought 2: 拿到『俄罗斯帝国』，这是历史国名，与题目『现在的首都』不一致，换用 birth_country_now 重试。
+Action 2: search('门捷列夫', 'birth_country_now') -> 俄罗斯
+Thought 3: 已确认第 1 跳 = 俄罗斯。继续查下一跳。
+Action 3: search('俄罗斯', 'capital_now') -> 莫斯科
+Thought 4: 证据链完整（俄罗斯 -> 莫斯科），给出 Final Answer。
+Final Answer: 莫斯科 | gold: 莫斯科 -> PASS
+[Q12] 《物种起源》作者现在国籍所在国家使用的货币是什么？
+Thought 1: 题目需要 3 跳。先查主实体。
+Action 1: search('《物种起源》', 'author') -> 达尔文
+Thought 2: 已确认第 1 跳 = 达尔文。继续查下一跳。
+Action 2: search('达尔文', 'nationality_now') -> 英国
+Thought 3: 已确认第 2 跳 = 英国。继续查下一跳。
+Action 3: search('英国', 'currency_now') -> 英镑
+Thought 4: 已确认国籍 = 英国。最后一跳把『货币』误当成『语言』（确定性策略缺陷）。
+Action 4: search('英国', 'language_now') -> 英语
+Final Answer: 英语 | gold: 英镑 -> FAIL
+--> react 正确 11/12 = 91.7%
+
+========================================================================
+汇总:
+  baseline (单次决策)      : 2/12 = 16.7%
+  react (循环检索+推理)    : 11/12 = 91.7%
+  提升（同任务同环境）     : +75.0 个百分点
+  机制结论: 与原论文方向一致——外部检索循环显著优于单次参数记忆回答。

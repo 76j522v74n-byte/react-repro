@@ -1,0 +1,3 @@
+# 本复现为纯标准库实现，无第三方依赖。
+# Python >= 3.8 即可运行：python code/react_agent.py --save
+# 若后续接入真实 LLM API，再按需添加 openai 等依赖。
